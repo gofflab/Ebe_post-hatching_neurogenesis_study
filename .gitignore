@@ -208,3 +208,6 @@ __marimo__/
 
 # Mac nonsense
 .DS_Store
+
+# Oversized rendered SOLAR report (>100MB, exceeds GitHub's file size limit) — regenerate from the .py
+SOLAR_analysis/20260513_loyal_annotations_and_figures_for_manuscript_resubmission.html

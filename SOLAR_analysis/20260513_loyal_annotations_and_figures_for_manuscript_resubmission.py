@@ -1,8 +1,3 @@
-# %% [markdown]
-# ---
-# title: "SOLARmap Analysis of E.berryi hatchlings"
-# jupyter: python3
-# ---
 #%% imports
 import scanpy as sc 
 #import squidpy as sq
@@ -668,7 +663,7 @@ palette = list(color_mapping.values())
 
 #%%
 tissue_palette = ['#2d6f2a','#ffbbbb', '#377eb8', '#984ea3', '#ff7f00','#49aed8', '#e41a1c','#333333']
-
+adata.uns["Tissue_colors"] = tissue_palette   
 #%%
 #################
 # Orientation plots
@@ -718,6 +713,10 @@ if 'Fontes Neurales' not in tissue.cat.categories:
 tissue[mask] = 'Fontes Neurales'
 adata.obs['Tissue'] = tissue
 
+adata.obs['Tissue'] = adata.obs['Tissue'].cat.reorder_categories(
+    sorted(adata.obs['Tissue'].cat.categories)
+)
+
 wb = adata.obs['White Body'].copy()
 wb[mask] = 'unassigned'
 adata.obs['White Body'] = wb
@@ -728,6 +727,8 @@ adata.write(datadir + 'combined/20260513_loyal_annotations_and_figures_for_manus
 
 #%% Update tissue_palette to include 'Fontes Neurales'
 tissue_palette = ['#2d6f2a','#ffbbbb', '#377eb8', '#984ea3', '#ff7f00','#49aed8', '#e41a1c','#333333', "#DCDC15"]  # Added a new color for 'Fontes Neurales'
+key="Tissue"
+adata.uns[f"{key}_colors"] = tissue_palette
 
 #%%
 black_fig()
@@ -861,26 +862,26 @@ sc.pl.scatter(
 black_fig()
 
 # Currently commented out because this just takes a long time to draw...
-for leiden_cluster in adata.obs['leiden_res_1.0'].cat.categories:
-    sc.pl.scatter(
-        adata,
-        x='x_adjusted',
-        y='y_adjusted',
-        color='leiden_res_1.0',
-        groups=leiden_cluster,
-        size=2,
-        title=f"Leiden Cluster - {leiden_cluster}",
-        save=f"_leiden_res_1.0_cluster_{leiden_cluster}_spatial.pdf"
-    )
+# for leiden_cluster in adata.obs['leiden_res_1.0'].cat.categories:
+#     sc.pl.scatter(
+#         adata,
+#         x='x_adjusted',
+#         y='y_adjusted',
+#         color='leiden_res_1.0',
+#         groups=leiden_cluster,
+#         size=2,
+#         title=f"Leiden Cluster - {leiden_cluster}",
+#         save=f"_leiden_res_1.0_cluster_{leiden_cluster}_spatial.pdf"
+#     )
     
-    sc.pl.umap(
-        adata,
-        color='leiden_res_1.0',
-        groups=leiden_cluster,
-        size=3,
-        title=f"Leiden Cluster - {leiden_cluster}",
-        save=f"_leiden_res_1.0_cluster_{leiden_cluster}_umap.pdf"
-    )
+#     sc.pl.umap(
+#         adata,
+#         color='leiden_res_1.0',
+#         groups=leiden_cluster,
+#         size=3,
+#         title=f"Leiden Cluster - {leiden_cluster}",
+#         save=f"_leiden_res_1.0_cluster_{leiden_cluster}_umap.pdf"
+#     )
 
 # %% plotnine heatmap of the proportion of each leiden cluster in each Brain Structure
 # cat_of_interest = 'Tissue'
@@ -1977,61 +1978,61 @@ p.save(f"{figdir}/EdU_intensity_density_neural_cell_types.pdf", width=6, height=
 #%%#################################
 # Additional supplemental figures
 ####################################
+# # commenting out here as the resulting compiled notebook is too large to export to html.
+# # Figure S4: Spot annotation plots
+# target_obs = ['leiden_res_1.0', 'position', 'Brain Structure', 'Optic Lobe', 'White Body', 'fontes_neurales','sample', 'log1p_total_counts', 'death_age_days']
 
-# Figure S4: Spot annotation plots
-target_obs = ['leiden_res_1.0', 'position', 'Brain Structure', 'Optic Lobe', 'White Body', 'fontes_neurales','sample', 'log1p_total_counts', 'death_age_days']
+# n_rows = len(target_obs)
+# black_fig()
+# fig, axes = plt.subplots(n_rows, 2, figsize=(24, 10 * n_rows))
 
-n_rows = len(target_obs)
-black_fig()
-fig, axes = plt.subplots(n_rows, 2, figsize=(24, 10 * n_rows))
+# panel_labels = list(string.ascii_uppercase)
 
-panel_labels = list(string.ascii_uppercase)
-
-for i, x in enumerate(target_obs):
-    n_axes_before = len(fig.axes)
-    sc.pl.scatter(
-        adata,
-        x='x_adjusted',
-        y='y_adjusted',
-        color=x,
-        size=3,
-        frameon=False,
-        show=False,
-        ax=axes[i, 0],
-        legend_loc='none',
-    )
+# for i, x in enumerate(target_obs):
+#     n_axes_before = len(fig.axes)
+#     sc.pl.scatter(
+#         adata,
+#         x='x_adjusted',
+#         y='y_adjusted',
+#         color=x,
+#         size=3,
+#         frameon=False,
+#         show=False,
+#         ax=axes[i, 0],
+#         legend_loc='none',
+#     )
     
-    axes[i, 0].set_xlabel('')
-    axes[i, 0].set_ylabel('')
-    axes[i, 0].set_xticks([])
-    axes[i, 0].set_yticks([])
-    # Remove colorbar added by scatter
-    while len(fig.axes) > n_axes_before:
-        fig.axes[-1].remove()
+#     axes[i, 0].set_xlabel('')
+#     axes[i, 0].set_ylabel('')
+#     axes[i, 0].set_xticks([])
+#     axes[i, 0].set_yticks([])
+#     # Remove colorbar added by scatter
+#     while len(fig.axes) > n_axes_before:
+#         fig.axes[-1].remove()
         
-    sc.pl.umap(
-        adata,
-        color=x,
-        size=3,
-        frameon=False,
-        show=False,
-        ax=axes[i, 1],
-        colorbar_loc='right',
-        legend_loc='best',  # Disable the giant colorbar
-    )
+#     sc.pl.umap(
+#         adata,
+#         color=x,
+#         size=3,
+#         frameon=False,
+#         show=False,
+#         ax=axes[i, 1],
+#         colorbar_loc='right',
+#         legend_loc='best',  # Disable the giant colorbar
+#     )
     
-    # Add panel labels
-    axes[i, 0].text(-0.05, 1.05, panel_labels[i], transform=axes[i, 0].transAxes,
-                    fontsize=50, fontweight='bold', va='bottom', ha='right')
+#     # Add panel labels
+#     axes[i, 0].text(-0.05, 1.05, panel_labels[i], transform=axes[i, 0].transAxes,
+#                     fontsize=50, fontweight='bold', va='bottom', ha='right')
 
-# Remove all colorbars from the figure
-# for ax in fig.axes:
-#     if ax not in axes.flatten():
-#         ax.remove()
+# # Remove all colorbars from the figure
+# # for ax in fig.axes:
+# #     if ax not in axes.flatten():
+# #         ax.remove()
 
-#%%
-plt.tight_layout()
-fig.savefig(f'{figdir}/Figure_S7_SOLAR_spot_annotation_plots.png', bbox_inches='tight',dpi=400)
+# #%%
+# plt.tight_layout()
+# fig.savefig(f'{figdir}/Figure_S7_SOLAR_spot_annotation_plots.png', bbox_inches='tight',dpi=400)
 
 #%% Same plot but for each leiden_res_1.0 cluster separately
 # n_clusters = adata.obs['leiden_res_1.0'].nunique()
@@ -2081,6 +2082,407 @@ fig.savefig(f'{figdir}/Figure_S7_SOLAR_spot_annotation_plots.png', bbox_inches='
 # plt.tight_layout()
 # fig.savefig(f'{figdir}/Figure_S4_2_SOLAR_by_leiden_1.0_cluster.png', bbox_inches='tight')
 
+#%% Figure S8D: Paired expression of Nkx2.5 and Ascl1
+# %%
+pretty_sections = [#'no_chase_3',
+                   #'04day_2',
+                   #'07day_1',
+                   #'07day_2',
+                   #'14day_2',
+                   '14day_3',
+                   '14day_7',
+                   #'14day_6',
+]
+
+#%%
+pretty_adata = adata[adata.obs['section_name'].isin(pretty_sections)].copy()
+
+#%%
+# Set the mean of x_adjusted and y_adjusted for each section to zero
+for section in pretty_sections:
+    mean_x = pretty_adata.obs.loc[pretty_adata.obs['section_name'] == section, 'x_adjusted'].mean()
+    pretty_adata.obs.loc[pretty_adata.obs['section_name'] == section, 'x_adjusted'] -= mean_x
+    mean_y = pretty_adata.obs.loc[pretty_adata.obs['section_name'] == section, 'y_adjusted'].mean()
+    pretty_adata.obs.loc[pretty_adata.obs['section_name'] == section, 'y_adjusted'] -= mean_y 
+
+# Shift the two sections apart on x axis for better visualization
+shift_amount = 14000  # Adjust this value as needed for spacing
+for _ in range(len(pretty_sections)):
+    section = pretty_sections[_]
+    pretty_adata.obs.loc[pretty_adata.obs['section_name'] == section, 'x_adjusted'] += _ * shift_amount 
+
+
+#%%
+from matplotlib.colors import to_rgb
+
+def _get_expr(adata, gene_id, layer=None):
+    """Dense 1D expression vector for one gene, optionally from a layer."""
+    sub = adata[:, gene_id]
+    X = sub.layers[layer] if layer is not None else sub.X
+    X = X.toarray() if hasattr(X, "toarray") else np.asarray(X)
+    return X.ravel()
+
+
+def _norm(v, pmax=99.0, vmax=None):
+    """Scale to [0,1], clipping at a high percentile so a few hot cells
+    don't wash out the channel. Pass vmax to fix the ceiling explicitly."""
+    top = vmax if vmax is not None else np.percentile(v, pmax)
+    if top <= 0:
+        return np.zeros_like(v, dtype=float)
+    return np.clip(v / top, 0.0, 1.0)
+
+
+def _gene_label(adata, gene_id, use_gene_name=True):
+    """Best-effort display name. Falls back to the id if no name column found."""
+    if use_gene_name:
+        for col in ("gene_name", "gene_symbol", "symbol", "name"):
+            if col in adata.var.columns:
+                return str(adata.var.loc[gene_id, col])
+    return gene_id
+
+def make_blend_legend_layers(
+    x_lim, y_lim,
+    color_1='#ff00ff', name_1='Gene 1',   # gene 1 -> y axis
+    color_2='#00ff00', name_2='Gene 2',   # gene 2 -> x axis
+    n=24, size_frac=0.20, pad_frac=0.05,
+    corner='lower right',
+    label_size=8,
+):
+    """
+    Layers for a 2D additive-blend color key, placed in the main plot's
+    data coordinates. Uses the same blend math as plot_pretty_sections_pair,
+    so it is a faithful key, not an approximation.
+
+    x axis = gene 2 (color_2) intensity, y axis = gene 1 (color_1) intensity.
+    Append the returned layers to an existing ggplot.
+    """
+    c1 = np.array(to_rgb(color_1))
+    c2 = np.array(to_rgb(color_2))
+
+    xspan, yspan = x_lim[1] - x_lim[0], y_lim[1] - y_lim[0]
+    L = min(xspan, yspan) * size_frac          # square side, data units
+    pad = min(xspan, yspan) * pad_frac
+
+    if corner == 'lower right':
+        x0, y0 = x_lim[1] - pad - L, y_lim[0] + pad
+    elif corner == 'lower left':
+        x0, y0 = x_lim[0] + pad,     y_lim[0] + pad
+    elif corner == 'upper right':
+        x0, y0 = x_lim[1] - pad - L, y_lim[1] - pad - L
+    else:  # 'upper left'
+        x0, y0 = x_lim[0] + pad,     y_lim[1] - pad - L
+
+    e = (np.arange(n) + 0.5) / n               # tile-center fractions
+    fx, fy = np.meshgrid(e, e)                  # fx -> gene2 (x), fy -> gene1 (y)
+    rgb = np.clip(fy[..., None] * c1 + fx[..., None] * c2, 0, 1)
+    hexcols = ['#{:02x}{:02x}{:02x}'.format(*(rgb.reshape(-1, 3)[i] * 255).astype(int))
+               for i in range(n * n)]
+
+    tile = L / n
+    leg_df = pd.DataFrame({
+        'x': x0 + fx.ravel() * L,
+        'y': y0 + fy.ravel() * L,
+        'fill': hexcols,
+    })
+
+    layers = [
+        pn.geom_tile(pn.aes('x', 'y', fill='fill'), data=leg_df,
+                  width=tile, height=tile, inherit_aes=False),
+        pn.scale_fill_identity(),
+        # x-axis label (gene 2), below the square
+        pn.geom_text(pn.aes('x', 'y', label='label'),
+                  data=pd.DataFrame({'x': [x0 + L / 2], 'y': [y0 - pad * 0.4],
+                                     'label': [name_2]}),
+                  color=color_2, size=label_size, ha='center', va='top',
+                  inherit_aes=False),
+        # y-axis label (gene 1), left of the square, rotated
+        pn.geom_text(pn.aes('x', 'y', label='label'),
+                  data=pd.DataFrame({'x': [x0 - pad * 0.4], 'y': [y0 + L / 2],
+                                     'label': [name_1]}),
+                  color=color_1, size=label_size, angle=90, ha='center', va='bottom',
+                  inherit_aes=False),
+    ]
+    return layers
+
+def plot_pretty_sections_pair(
+    adata,
+    gene_id_1='EB45560',
+    gene_id_2='EB10890',
+    #color_1='#3b6dff',      # gene 1 -> blue
+    #color_2='#ffd400',      # gene 2 -> yellow
+    color_1='#ff00ff',   # magenta -> gene 1 lives in R + B
+    color_2='#00ff00',   # green   -> gene 2 lives in G only
+    scale=True,
+    layer=None,
+    scalebar_size_um=500,
+    pmax=99.0,
+    vmax_1=None,
+    vmax_2=None,
+    use_gene_name=True,
+    **kwargs
+):
+    """
+    Two-gene differential overlay on adjusted section coordinates.
+
+    Each cell's color is an additive blend of the two normalized channels,
+    so cell shows color_1 where only gene 1 is high, color_2 where only
+    gene 2 is high, and a mix (trending white on a black background) where
+    both are co-expressed. Background / non-expressing cells stay near-black.
+
+    Extra **kwargs are forwarded to geom_point (e.g. size, shape).
+    """
+    x_lim = (adata.obs['x_adjusted'].min(), adata.obs['x_adjusted'].max())
+    y_lim = (adata.obs['y_adjusted'].min(), adata.obs['y_adjusted'].max())
+
+    e1 = _norm(_get_expr(adata, gene_id_1, layer), pmax=pmax, vmax=vmax_1)
+    e2 = _norm(_get_expr(adata, gene_id_2, layer), pmax=pmax, vmax=vmax_2)
+
+    c1 = np.array(to_rgb(color_1))
+    c2 = np.array(to_rgb(color_2))
+
+    # Additive blend, clipped to valid RGB. Shape (n_cells, 3).
+    rgb = np.clip(e1[:, None] * c1 + e2[:, None] * c2, 0.0, 1.0)
+    hexcols = ['#{:02x}{:02x}{:02x}'.format(*(rgb[i] * 255).astype(int))
+               for i in range(rgb.shape[0])]
+
+    df = pd.DataFrame({
+        'x': adata.obs['x_adjusted'].to_numpy(),
+        'y': adata.obs['y_adjusted'].to_numpy(),
+        'color': hexcols,
+        'intensity': np.maximum(e1, e2),   # for draw ordering
+    })
+    # Draw dim cells first, bright cells last so signal sits on top.
+    df = df.sort_values('intensity')
+
+    name_1 = _gene_label(adata, gene_id_1, use_gene_name)
+    name_2 = _gene_label(adata, gene_id_2, use_gene_name)
+
+    p = (
+        pn.ggplot(df, pn.aes('x', 'y', color='color'))
+        + pn.geom_point(**kwargs)
+        + pn.scale_color_identity()
+        + pn.coord_fixed(xlim=x_lim, ylim=y_lim)
+        + pn.labs(title=f'{name_1} +  {name_2}')
+        + pn.theme(
+            # match black_fig(): black canvas, white text
+            plot_background=element_rect(fill='black', color='black'),
+            panel_background=element_rect(fill='black', color='black'),
+            legend_background=element_rect(fill='black', color='black'),
+            legend_key=element_rect(fill='black', color='black'),
+            plot_title=element_text(color='white'),
+            text=element_text(color='white'),
+            axis_text_x=element_blank(),
+            axis_text_y=element_blank(),
+            axis_title_x=element_blank(),
+            axis_title_y=element_blank(),
+            axis_ticks_x=element_blank(),
+            axis_ticks_y=element_blank(),
+            panel_grid_major_x=element_blank(),
+            panel_grid_minor_x=element_blank(),
+            panel_grid_major_y=element_blank(),
+            panel_grid_minor_y=element_blank(),
+            axis_line_x=element_blank(),
+            axis_line_y=element_blank(),
+        )
+    )
+
+    for sb_layer in add_scale_bar(x_lim, y_lim, color='white', size_um=scalebar_size_um):
+        p = p + sb_layer
+
+    return p
+
+#%% Make a scatter plot of the two target genes where one is colored in yellow and the other in blue.
+color_1='#ff00ff'
+color_2='#00ff00'
+
+black_fig()
+gene_1 = 'EB45560'  # Ascl1-1
+gene_2 = 'EB10890'  # Nkx2-5
+p = plot_pretty_sections_pair(
+    pretty_adata,
+    gene_id_1=gene_1, 
+    gene_id_2=gene_2, 
+    size=0.01,
+    layer='counts',
+)
+x_lim = (pretty_adata.obs['x_adjusted'].min(), pretty_adata.obs['x_adjusted'].max())
+y_lim = (pretty_adata.obs['y_adjusted'].min(), pretty_adata.obs['y_adjusted'].max())
+
+for lyr in make_blend_legend_layers(
+        x_lim, y_lim,
+        color_1=color_1, name_1=_gene_label(pretty_adata, gene_1),
+        color_2=color_2, name_2=_gene_label(pretty_adata, gene_2),
+        corner='lower left'):
+    p = p + lyr
+p.show()
+p.save(f"{figdir}/co-expression/Ascl1-1_and_Nkx2.5_pretty_sections.pdf", width=14, height=7)
+
+#%%
+black_fig()
+gene_1 = 'EB45560'  # Ascl1-1
+gene_2 = 'EB46007'  # Ascl1m
+p = plot_pretty_sections_pair(
+    pretty_adata,
+    gene_id_1=gene_1,   
+    gene_id_2=gene_2, 
+    size=0.01,
+    layer='counts',
+)
+x_lim = (pretty_adata.obs['x_adjusted'].min(), pretty_adata.obs['x_adjusted'].max())
+y_lim = (pretty_adata.obs['y_adjusted'].min(), pretty_adata.obs['y_adjusted'].max())
+
+for lyr in make_blend_legend_layers(
+        x_lim, y_lim,
+        color_1=color_1, name_1=_gene_label(pretty_adata, gene_1),
+        color_2=color_2, name_2=_gene_label(pretty_adata, gene_2),
+        corner='lower left'):
+    p = p + lyr
+p.show()
+p.save(f"{figdir}/co-expression/Ascl1-1_and_Ascl1m_pretty_sections.pdf", width=14, height=7)
+
+#%% Create a plotnine heatmap visualization for the spatial autocorrelation (Geary's C) for all pairs of target genes set
+from scipy import sparse
+from scipy.cluster.hierarchy import linkage, leaves_list
+from scipy.spatial.distance import squareform
+from sklearn.neighbors import kneighbors_graph
+
+target_genes = ['EB45560', #Ascl1-1
+                'EB46007', #Ascl1-2
+                'EB17597', #Runx1
+                'EB08075', #Ngn1
+                'EB22657', #Sox2
+                'EB10890', #Nkx2-5
+                'EB27437', #SoxF
+                'EB18683', #Itga
+]
+
+def _expr_matrix(adata, genes, layer=None):
+    """Dense (n_cells, n_genes) block, columns in `genes` order."""
+    sub = adata[:, genes]
+    X = sub.layers[layer] if layer is not None else sub.X
+    return X.toarray() if sparse.issparse(X) else np.asarray(X)
+
+
+def _row_standardized_W(adata, coord_keys=('x_adjusted', 'y_adjusted'),
+                        n_neighbors=6, connectivity_key=None):
+    """Symmetric KNN connectivity, row-standardized. Isolated rows -> all-zero."""
+    if connectivity_key is not None:
+        A = adata.obsp[connectivity_key].astype(float).copy()
+    else:
+        coords = adata.obs[list(coord_keys)].to_numpy()
+        A = kneighbors_graph(coords, n_neighbors=n_neighbors,
+                             mode='connectivity', include_self=False)
+    A = ((A + A.T) > 0).astype(float)          # symmetric, binary
+    A = sparse.csr_matrix(A)
+    A.setdiag(0); A.eliminate_zeros()
+    rowsum = np.asarray(A.sum(1)).ravel()
+    inv = np.divide(1.0, rowsum, out=np.zeros_like(rowsum), where=rowsum > 0)
+    W = sparse.diags(inv) @ A                  # row-standardized
+    return sparse.csr_matrix(W), rowsum
+
+
+def lees_l_matrix(adata, genes, layer=None,
+                  coord_keys=('x_adjusted', 'y_adjusted'),
+                  n_neighbors=6, connectivity_key=None):
+    """
+    Pairwise Lee's L spatial co-expression matrix.
+
+    Returns a (genes x genes) DataFrame. Diagonal = per-gene spatial
+    smoothing scalar (autocorrelation, in [0,1]). Off-diagonal:
+        > 0  spatially co-located
+        ~ 0  spatially independent
+        < 0  spatially segregated
+    """
+    W, rowsum = _row_standardized_W(
+        adata, coord_keys=coord_keys, n_neighbors=n_neighbors,
+        connectivity_key=connectivity_key)
+
+    X = _expr_matrix(adata, genes, layer=layer).astype(float)
+    Z = X - X.mean(0, keepdims=True)           # center per gene
+    norms = np.sqrt((Z ** 2).sum(0))           # ||z_g||, length n_genes
+    norms[norms == 0] = np.nan                 # flat genes -> NaN, not 0/0
+
+    WZ = W @ Z                                  # spatial lags, (n_cells, n_genes)
+    num = WZ.T @ WZ                             # (n_genes, n_genes)
+
+    n = Z.shape[0]
+    S2 = float((rowsum ** 2).sum())             # = n if no isolates
+    prefactor = n / S2 if S2 > 0 else 1.0
+
+    L = prefactor * num / np.outer(norms, norms)
+    L = np.asarray(L)
+    L = 0.5 * (L + L.T)                          # enforce numerical symmetry
+
+    return pd.DataFrame(L, index=genes, columns=genes)
+
+#%%
+def plot_lees_l(Lmat, adata=None, name_col='unique_gene_name',
+                cluster=True, annotate=True,
+                title="Lee's L spatial co-expression", digits=2):
+    """
+    Plotnine heatmap of a Lee's L matrix.
+
+    If `adata` is given, axis tick labels are mapped from the matrix's gene
+    IDs to adata.var[name_col]. The matrix stays indexed by ID internally;
+    only the displayed labels change.
+    """
+    genes = list(Lmat.index)
+
+    # build ID -> display-name map (falls back to the ID if missing)
+    if adata is not None:
+        name_map = adata.var[name_col].to_dict()
+        labels = [str(name_map.get(g, g)) for g in genes]
+    else:
+        labels = list(genes)
+
+    if cluster:
+        D = 1.0 - Lmat.values
+        np.fill_diagonal(D, 0.0)
+        D = 0.5 * (D + D.T)
+        D[D < 0] = 0.0
+        order = leaves_list(linkage(squareform(D, checks=False), method='average'))
+    else:
+        order = np.arange(len(genes))
+
+    ordered_genes = [genes[i] for i in order]
+    ordered_labels = [labels[i] for i in order]
+    M = Lmat.loc[ordered_genes, ordered_genes].copy()
+    for g in ordered_genes:
+        M.loc[g, g] = np.nan
+
+    long = M.reset_index().melt(id_vars='index', var_name='gene_y',
+                                value_name='L').rename(columns={'index': 'gene_x'})
+    # categorical ordered by clustering, then renamed to display labels
+    cx = pd.Categorical(long['gene_x'], categories=ordered_genes, ordered=True)
+    long['gene_x'] = cx.rename_categories(ordered_labels)
+    cy = pd.Categorical(long['gene_y'], categories=ordered_genes, ordered=True)
+    long['gene_y'] = cy.rename_categories(ordered_labels)
+    long['lbl'] = long['L'].round(digits).astype(str)
+
+    #off = long.loc[long['gene_x'] != long['gene_y'], 'L']
+    lim = float(np.nanmax(np.abs(long['L'])))
+
+    p = (
+        pn.ggplot(long, pn.aes('gene_x', 'gene_y', fill='L'))
+        + pn.geom_tile(color='white', size=0.3)
+        + pn.scale_fill_gradient2(low='#2166ac', mid='#f7f7f7', high='#b2182b',na_value='#444444',
+                                midpoint=0, limits=(-lim, lim), name="Lee's L")
+        + pn.coord_fixed()
+        + pn.labs(title=title, x='', y='')
+        + pn.theme_minimal()
+        + pn.theme(axis_text_x=pn.element_text(rotation=45, ha='right'),
+                   panel_grid_major=pn.element_blank(),
+                   panel_grid_minor=pn.element_blank())
+    )
+    if annotate:
+        p = p + pn.geom_text(pn.aes(label='lbl'), size=7, color='black')
+    return p
+
+#%% Lee's L spatial co-expression heatmap for target genes
+Lmat = lees_l_matrix(adata=adata, genes=target_genes, layer='log1p', n_neighbors=6)
+p = plot_lees_l(Lmat, adata=adata, cluster=True, annotate=False) + pn.coord_equal()
+p.show()
+p.save(f"{figdir}/co-expression/lees_l_heatmap.pdf", width=6, height=6)
 
 #%%#########################
 # Save final anndatas
@@ -2112,5 +2514,9 @@ pseudotime_plot = plot_pretty_sections(adata,
 
 pseudotime_plot.show()
 pseudotime_plot.save(f"{figdir}/fontes_neurales_pseudotime_spatial_plot_with_scalebar.pdf", width=20, height=20)
+
+
+# %%
+adata.write(datadir + 'combined/20260513_loyal_annotations_and_figures_for_manuscript_post_pearson_resubmission_with_pseudotime.h5ad')
 
 # %%
