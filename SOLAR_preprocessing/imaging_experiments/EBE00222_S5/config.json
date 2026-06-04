@@ -1,0 +1,5 @@
+{
+  "diameter": 85,
+  "pretrained_model": "/working/cellpose-training/models/ebe250725",
+  "pretrained_model_ortho": "/working/cellpose-training/models/ebeortho250725"
+}
