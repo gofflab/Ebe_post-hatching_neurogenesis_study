@@ -5,7 +5,7 @@
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-from patsy import dmatrices, bs
+import statsmodels.formula.api as smf
 import plotnine as pn
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -26,6 +26,16 @@ data['normalized_count'] = (data['edu_cell_count'] / data['area']) * scaling_fac
 
 # create an 'animal' column by combining 'transplant_date' and 'embryo'
 data['animal'] = data['transplant_date'].astype(str) + ' ' + data['embryo'].astype(str)
+
+
+#%% Mixed-model helper: matches resection_stats.py
+# normalized_count ~ factor, random intercept for animal, REML.
+# Returns (coefficient, SE, p) for the non-reference level of `factor`.
+def mixed_test(subset, factor, reference):
+    formula = f"normalized_count ~ C({factor}, Treatment('{reference}'))"
+    result = smf.mixedlm(formula, data=subset, groups=subset['animal']).fit(reml=True)
+    key = [k for k in result.fe_params.index if k.startswith('C(')][0]
+    return result.fe_params[key], result.bse[key], result.pvalues[key], result
 
 #%%
 #data = data.dropna()
@@ -190,8 +200,9 @@ else:
     print(f"  Difference:    {cb_ant_ant.mean() - ol_ant_ant.mean():.2f} cells/100,000 µm²")
     print(f"  Ratio (CB/OL): {cb_ant_ant.mean() / (ol_ant_ant.mean() + 1e-6):.2f}x")
     
-    # Independent samples t-test
-    t_stat_ant, p_val_ant = stats.ttest_ind(cb_ant_ant, ol_ant_ant)
+    # Mixed model: tissue as fixed effect, animal as random intercept
+    coef_ant, se_ant, p_val_ant, res_ant = mixed_test(ant_ant_ipsi, 'tissue', 'Optic Lobe')
+    t_stat_ant = coef_ant / se_ant  # z-statistic for the CB - OL difference
     
     # Calculate Cohen's d effect size
     pooled_std = np.sqrt(((len(cb_ant_ant)-1)*cb_ant_ant.std()**2 + (len(ol_ant_ant)-1)*ol_ant_ant.std()**2) / 
@@ -204,7 +215,7 @@ else:
     ci_upper = (cb_ant_ant.mean() - ol_ant_ant.mean()) + 1.96 * se_diff
     
     print(f"\nStatistical Test:")
-    print(f"  t-test: t({len(cb_ant_ant) + len(ol_ant_ant) - 2}) = {t_stat_ant:.3f}, p = {p_val_ant:.4f}")
+    print(f"  Mixed model (n animals = {ant_ant_ipsi['animal'].nunique()}): CB - OL = {coef_ant:.2f} ± {se_ant:.2f}, z = {t_stat_ant:.3f}, p = {p_val_ant:.4g}")
     print(f"  Cohen's d: {cohens_d:.3f} ({'small' if abs(cohens_d) < 0.5 else 'medium' if abs(cohens_d) < 0.8 else 'large'} effect)")
     print(f"  95% CI for difference: [{ci_lower:.2f}, {ci_upper:.2f}]")
     
@@ -264,8 +275,9 @@ else:
     print(f"  Difference:    {ol_post_post.mean() - cb_post_post.mean():.2f} cells/100,000 µm²")
     print(f"  Ratio (OL/CB): {ol_post_post.mean() / (cb_post_post.mean() + 1e-6):.2f}x")
     
-    # Independent samples t-test
-    t_stat_post, p_val_post = stats.ttest_ind(ol_post_post, cb_post_post)
+    # Mixed model: tissue as fixed effect, animal as random intercept
+    coef_post, se_post, p_val_post, res_post = mixed_test(post_post_ipsi, 'tissue', 'Central Brain')
+    t_stat_post = coef_post / se_post  # z-statistic for the OL - CB difference
     
     # Calculate Cohen's d effect size
     pooled_std = np.sqrt(((len(ol_post_post)-1)*ol_post_post.std()**2 + (len(cb_post_post)-1)*cb_post_post.std()**2) / 
@@ -278,7 +290,7 @@ else:
     ci_upper = (ol_post_post.mean() - cb_post_post.mean()) + 1.96 * se_diff
     
     print(f"\nStatistical Test:")
-    print(f"  t-test: t({len(ol_post_post) + len(cb_post_post) - 2 }) = {t_stat_post:.3f}, p = {p_val_post:.4f}")
+    print(f"  Mixed model (n animals = {post_post_ipsi['animal'].nunique()}): OL - CB = {coef_post:.2f} ± {se_post:.2f}, z = {t_stat_post:.3f}, p = {p_val_post:.4g}")
     print(f"  Cohen's d: {cohens_d:.3f} ({'small' if abs(cohens_d) < 0.5 else 'medium' if abs(cohens_d) < 0.8 else 'large'} effect)")
     print(f"  95% CI for difference: [{ci_lower:.2f}, {ci_upper:.2f}]") 
     print(f"\nInterpretation:")
@@ -342,8 +354,9 @@ for transplant in data['transplant_type'].unique():
     print(f"  Difference:      {ipsi.mean() - contra.mean():.2f} cells/100,000 µm²")
     print(f"  Ratio (Ipsi/Contra): {ipsi.mean() / (contra.mean() + 1e-6):.2f}x")
     
-    # Independent samples t-test
-    t_stat, p_val = stats.ttest_ind(ipsi, contra)
+    # Mixed model: side as fixed effect, animal as random intercept
+    coef_side, se_side, p_val, _ = mixed_test(transplant_data, 'relative_side', 'ipsilateral')
+    t_stat = -coef_side / se_side  # z-statistic, sign flipped so positive = ipsi > contra
     
     # Calculate Cohen's d effect size
     pooled_std = np.sqrt(((len(ipsi)-1)*ipsi.std()**2 + (len(contra)-1)*contra.std()**2) / 
@@ -356,7 +369,7 @@ for transplant in data['transplant_type'].unique():
     ci_upper = (ipsi.mean() - contra.mean()) + 1.96 * se_diff
     
     print(f"\nStatistical Test:")
-    print(f"  t-test: t({len(ipsi) + len(contra) - 2}) = {t_stat:.3f}, p = {p_val:.4f}")
+    print(f"  Mixed model (n animals = {transplant_data['animal'].nunique()}): ipsi - contra = {-coef_side:.2f} ± {se_side:.2f}, z = {t_stat:.3f}, p = {p_val:.4g}")
     print(f"  Cohen's d: {cohens_d:.3f} ({'small' if abs(cohens_d) < 0.5 else 'medium' if abs(cohens_d) < 0.8 else 'large'} effect)")
     print(f"  95% CI for difference: [{ci_lower:.2f}, {ci_upper:.2f}]")
     
@@ -407,9 +420,10 @@ for transplant in data['transplant_type'].unique():
         contra = tissue_data[tissue_data['relative_side'] == 'contralateral']['normalized_count']
         
         if len(ipsi) > 0 and len(contra) > 0:
-            # Welch's t-test (doesn't assume equal variances)
-            t_stat, p_val = stats.ttest_ind(ipsi, contra, equal_var=False)
+            # Mixed model, matching resection_stats.py
+            _, _, p_val, _ = mixed_test(tissue_data, 'relative_side', 'ipsilateral')
             p_value_by_tissue[tissue] = p_val
+            t_stat = np.nan
             
             # Print for verification
             print(f"{transplant} - {tissue}:")
@@ -532,22 +546,20 @@ for transplant in data['transplant_type'].unique():
     
     # --- Calculate p-values ---
     
+    # All three p-values from mixed models with animal as random intercept
+    # (same model as resection_stats.py; slices are not treated as independent)
+    
     # 1. CB ipsi vs CB contra
-    cb_ipsi = subset[(subset['tissue'] == 'Central Brain') & 
-                     (subset['relative_side'] == 'ipsilateral')]['normalized_count']
-    cb_contra = subset[(subset['tissue'] == 'Central Brain') & 
-                       (subset['relative_side'] == 'contralateral')]['normalized_count']
-    _, p_cb_side = stats.ttest_ind(cb_ipsi, cb_contra, equal_var=False)
+    cb = subset[subset['tissue'] == 'Central Brain']
+    _, _, p_cb_side, _ = mixed_test(cb, 'relative_side', 'ipsilateral')
     
     # 2. OL ipsi vs OL contra
-    ol_ipsi = subset[(subset['tissue'] == 'Optic Lobe') & 
-                     (subset['relative_side'] == 'ipsilateral')]['normalized_count']
-    ol_contra = subset[(subset['tissue'] == 'Optic Lobe') & 
-                       (subset['relative_side'] == 'contralateral')]['normalized_count']
-    _, p_ol_side = stats.ttest_ind(ol_ipsi, ol_contra, equal_var=False)
+    ol = subset[subset['tissue'] == 'Optic Lobe']
+    _, _, p_ol_side, _ = mixed_test(ol, 'relative_side', 'ipsilateral')
     
-    # 3. CB ipsi vs OL ipsi (the new comparison)
-    _, p_tissue_ipsi = stats.ttest_ind(cb_ipsi, ol_ipsi, equal_var=False)
+    # 3. CB ipsi vs OL ipsi
+    ipsi_only = subset[subset['relative_side'] == 'ipsilateral']
+    _, _, p_tissue_ipsi, _ = mixed_test(ipsi_only, 'tissue', 'Optic Lobe')
     
     # Print for verification
     print(f"\n{'='*60}")
